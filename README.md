@@ -64,3 +64,24 @@ npm run dev
 ```
 
 Open your browser and visit: **`http://localhost:5173/`**
+
+---
+
+## ⚡ 1-Click Deployment to Vercel
+
+This repository is pre-configured with `vercel.json` and a serverless API handler (`api/index.js`) so that both the **Vite React Frontend** and the **Express Backend** deploy together seamlessly on Vercel!
+
+### Step 1: Import Repository to Vercel
+1. Go to [https://vercel.com](https://vercel.com) and log in with your GitHub account.
+2. Click **"Add New..."** ➔ **"Project"**.
+3. Locate and select **`college-invitation`** (`gouthamiguptha27/college-invitation`) and click **"Import"**.
+
+### Step 2: Set Environment Variables
+In the Vercel project configuration page under **Environment Variables**, add:
+- **`MONGODB_URI`**: Your MongoDB connection string (e.g., from [MongoDB Atlas free tier](https://www.mongodb.com/atlas): `mongodb+srv://<user>:<password>@cluster0.mongodb.net/college_invitation?retryWrites=true&w=majority`).
+  *(Note: If left unset, the backend will operate in graceful fallback mode)*.
+
+### Step 3: Deploy
+- Leave the Root Directory as `./` (the pre-configured `vercel.json` automatically manages the build and rewrites).
+- Click **"Deploy"**!
+- In less than 60 seconds, your application will be live at `https://your-project.vercel.app`.
