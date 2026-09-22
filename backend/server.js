@@ -66,6 +66,8 @@ app.get('/api/health', (req, res) => {
 
 // Serve frontend build if accessed through Express directly
 const distPath = path.join(__dirname, '../dist');
+const localHtmlPath = path.join(__dirname, 'index.html');
+
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
 }
@@ -77,6 +79,9 @@ app.get('*', (req, res, next) => {
   const indexPath = path.join(distPath, 'index.html');
   if (fs.existsSync(indexPath)) {
     return res.sendFile(indexPath);
+  }
+  if (fs.existsSync(localHtmlPath)) {
+    return res.sendFile(localHtmlPath);
   }
   res.send('College Invitation App is starting up...');
 });
