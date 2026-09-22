@@ -5,21 +5,8 @@ const path = require('path');
 const fs = require('fs');
 const Event = require('../models/Event');
 
-// Configure Multer for College Photo Uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '../uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-    cb(null, 'college-' + uniqueSuffix + ext);
-  }
-});
+// Memory storage works both in local Node.js and Vercel Serverless!
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   const allowed = /jpeg|jpg|png|webp|gif/;
@@ -34,7 +21,7 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { fileSize: 8 * 1024 * 1024 }, // 8MB limit
   fileFilter: fileFilter
 });
 
@@ -57,7 +44,7 @@ async function getOrCreateEvent() {
         lat: 30.9678,
         lng: 76.4732
       },
-      photoUrl: '/uploads/default-college.jpg',
+      photoUrl: '/default-college.jpg',
       brotherName: 'My Brother',
       brotherDepartment: 'Computer Science & Engineering',
       contactInfo: {
@@ -116,23 +103,37 @@ router.put('/', async (req, res) => {
   }
 });
 
-// POST Upload college photograph
+// POST Upload college photograph (saves as Data URL directly in MongoDB, 100% Vercel Serverless compatible)
 router.post('/upload-photo', upload.single('collegePhoto'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
 
-    const relativePath = `/uploads/${req.file.filename}`;
+    const base64Data = req.file.buffer.toString('base64');
+    const photoDataUrl = `data:${req.file.mimetype};base64,${base64Data}`;
+
+    // Optionally also save to disk if uploads directory exists/writable
+    try {
+      const uploadDir = path.join(__dirname, '../uploads');
+      if (fs.existsSync(uploadDir)) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(req.file.originalname).toLowerCase() || '.jpg';
+        fs.writeFileSync(path.join(uploadDir, 'college-' + uniqueSuffix + ext), req.file.buffer);
+      }
+    } catch (e) {
+      // Ignore disk write errors in read-only serverless environments
+    }
+
     const event = await getOrCreateEvent();
-    event.photoUrl = relativePath;
+    event.photoUrl = photoDataUrl;
     event.updatedAt = new Date();
     await event.save();
 
     res.json({
       success: true,
-      message: 'College photograph uploaded successfully!',
-      photoUrl: relativePath,
+      message: 'College photograph uploaded and saved successfully!',
+      photoUrl: photoDataUrl,
       event
     });
   } catch (error) {
